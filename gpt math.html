@@ -1,0 +1,5581 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>應用數學系｜全功能線上數學工具箱</title>
+  <meta name="description" content="應用數學系專用的瀏覽器數學工具箱：計算機、矩陣、微積分、統計、數值分析、ODE 與函數繪圖。">
+
+  <!-- Math.js：數學解析與數值運算 -->
+  <script src="https://unpkg.com/mathjs@15.2.0/lib/browser/math.js"></script>
+
+  <!-- Plotly.js：互動式函數繪圖 -->
+  <script src="https://cdn.plot.ly/plotly-4.1.1.min.js" charset="utf-8"></script>
+
+  <!-- MathJax：數學公式排版 -->
+  <script defer src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-mml-chtml.js"></script>
+
+  <style>
+    :root{
+      --bg:#f4f7fb;
+      --panel:#fff;
+      --panel2:#f8fafc;
+      --text:#172033;
+      --muted:#687386;
+      --line:#dbe2eb;
+      --primary:#2563eb;
+      --primary2:#1d4ed8;
+      --accent:#7c3aed;
+      --success:#059669;
+      --danger:#dc2626;
+      --shadow:0 12px 35px rgba(31,41,55,.09);
+      --radius:18px;
+      --sidebar:270px;
+    }
+
+    *{
+      box-sizing:border-box;
+    }
+
+    html{
+      scroll-behavior:smooth;
+    }
+
+    body{
+      margin:0;
+      font-family:Inter,"Noto Sans TC","Microsoft JhengHei",system-ui,sans-serif;
+      background:var(--bg);
+      color:var(--text);
+    }
+
+    button,input,select,textarea{
+      font:inherit;
+    }
+
+    button{
+      cursor:pointer;
+    }
+
+    .app{
+      min-height:100vh;
+      display:grid;
+      grid-template-columns:var(--sidebar) 1fr;
+    }
+
+    /* =========================
+       左側 Sidebar
+       ========================= */
+
+    .sidebar{
+      position:sticky;
+      top:0;
+      height:100vh;
+      padding:22px 16px;
+      background:#0f172a;
+      color:#e5edf9;
+      overflow:auto;
+    }
+
+    .brand{
+      display:flex;
+      gap:12px;
+      align-items:center;
+      padding:8px 8px 18px;
+    }
+
+    .brand-badge{
+      width:44px;
+      height:44px;
+      border-radius:13px;
+      background:linear-gradient(135deg,#60a5fa,#8b5cf6);
+      display:grid;
+      place-items:center;
+      font-size:22px;
+      font-weight:800;
+      color:white;
+    }
+
+    .brand h1{
+      font-size:16px;
+      line-height:1.3;
+      margin:0;
+    }
+
+    .brand p{
+      font-size:12px;
+      color:#a9b7cb;
+      margin:4px 0 0;
+    }
+
+    .nav-title{
+      font-size:11px;
+      letter-spacing:.12em;
+      color:#8492a8;
+      padding:16px 10px 7px;
+    }
+
+    .nav-btn{
+      width:100%;
+      display:flex;
+      align-items:center;
+      gap:10px;
+      border:0;
+      background:transparent;
+      color:#cbd5e1;
+      text-align:left;
+      padding:10px 11px;
+      border-radius:12px;
+      margin:2px 0;
+      font-size:14px;
+    }
+
+    .nav-btn:hover,
+    .nav-btn.active{
+      background:#1e293b;
+      color:white;
+    }
+
+    .nav-btn.active{
+      box-shadow:inset 3px 0 0 #60a5fa;
+    }
+
+    .nav-icon{
+      width:22px;
+      text-align:center;
+    }
+
+    .sidebar-foot{
+      margin-top:16px;
+      border-top:1px solid #263247;
+      padding:14px 8px;
+      color:#8fa0b7;
+      font-size:12px;
+      line-height:1.6;
+    }
+
+    /* =========================
+       主區域
+       ========================= */
+
+    .main{
+      padding:22px;
+      min-width:0;
+    }
+
+    .topbar{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      margin-bottom:18px;
+    }
+
+    .menu-btn{
+      display:none;
+    }
+
+    .topbar .title h2{
+      margin:0;
+      font-size:24px;
+    }
+
+    .topbar .title p{
+      margin:5px 0 0;
+      color:var(--muted);
+      font-size:13px;
+    }
+
+    .badge{
+      display:inline-flex;
+      align-items:center;
+      gap:7px;
+      background:#eaf1ff;
+      color:#2349a0;
+      border:1px solid #cad8ff;
+      padding:7px 10px;
+      border-radius:999px;
+      font-size:12px;
+    }
+
+    .section{
+      display:none;
+      animation:fade .22s ease;
+    }
+
+    .section.active{
+      display:block;
+    }
+
+    @keyframes fade{
+      from{
+        opacity:.4;
+        transform:translateY(4px);
+      }
+      to{
+        opacity:1;
+        transform:none;
+      }
+    }
+
+    .grid{
+      display:grid;
+      gap:16px;
+    }
+
+    .two{
+      grid-template-columns:repeat(2,minmax(0,1fr));
+    }
+
+    .three{
+      grid-template-columns:repeat(3,minmax(0,1fr));
+    }
+
+    .four{
+      grid-template-columns:repeat(4,minmax(0,1fr));
+    }
+
+    .card{
+      background:var(--panel);
+      border:1px solid var(--line);
+      border-radius:var(--radius);
+      padding:18px;
+      box-shadow:var(--shadow);
+    }
+
+    .card h3{
+      margin:0 0 12px;
+      font-size:17px;
+    }
+
+    .card h4{
+      margin:0 0 8px;
+      font-size:14px;
+    }
+
+    .muted{
+      color:var(--muted);
+      font-size:13px;
+    }
+
+    .row{
+      display:flex;
+      gap:10px;
+      align-items:center;
+      flex-wrap:wrap;
+    }
+
+    .actions{
+      display:flex;
+      gap:9px;
+      flex-wrap:wrap;
+      margin-top:12px;
+    }
+
+    label{
+      display:block;
+      font-size:13px;
+      font-weight:650;
+      margin-bottom:6px;
+    }
+
+    input,
+    select,
+    textarea{
+      width:100%;
+      border:1px solid var(--line);
+      background:#fff;
+      color:var(--text);
+      padding:10px 11px;
+      border-radius:10px;
+      outline:none;
+    }
+
+    input:focus,
+    select:focus,
+    textarea:focus{
+      border-color:#8bb0ff;
+      box-shadow:0 0 0 3px rgba(37,99,235,.1);
+    }
+
+    textarea{
+      resize:vertical;
+      min-height:96px;
+    }
+
+    .mini{
+      font-size:12px;
+    }
+
+    .inline{
+      display:grid;
+      grid-template-columns:1fr auto;
+      gap:8px;
+      align-items:end;
+    }
+
+    .btn{
+      border:0;
+      border-radius:10px;
+      padding:10px 13px;
+      background:#e9eef6;
+      color:#1f2937;
+      font-weight:700;
+    }
+
+    .btn:hover{
+      filter:brightness(.98);
+    }
+
+    .btn.primary{
+      background:var(--primary);
+      color:white;
+    }
+
+    .btn.primary:hover{
+      background:var(--primary2);
+    }
+
+    .btn.success{
+      background:#dff8ef;
+      color:#047857;
+    }
+
+    .btn.danger{
+      background:#fee2e2;
+      color:#b91c1c;
+    }
+
+    .btn.ghost{
+      background:transparent;
+      border:1px solid var(--line);
+    }
+
+    .result{
+      margin-top:12px;
+      padding:13px;
+      border-radius:12px;
+      background:var(--panel2);
+      border:1px dashed #cfd8e5;
+      min-height:48px;
+      overflow:auto;
+    }
+
+    .result.ok{
+      border-color:#a7dfcb;
+    }
+
+    .result.err{
+      border-color:#fecaca;
+      color:#991b1b;
+      background:#fff7f7;
+    }
+
+    .big-result{
+      font-size:22px;
+      font-weight:800;
+    }
+
+    .kpi{
+      padding:15px;
+      border-radius:14px;
+      background:linear-gradient(135deg,#eff6ff,#f5f3ff);
+      border:1px solid #d9e4ff;
+    }
+
+    .kpi .value{
+      font-size:23px;
+      font-weight:800;
+      margin-top:5px;
+    }
+
+    .kpi .label{
+      color:var(--muted);
+      font-size:12px;
+    }
+
+    .formula{
+      padding:13px 15px;
+      background:#fbfbff;
+      border-left:4px solid var(--accent);
+      border-radius:10px;
+      overflow:auto;
+      margin-top:12px;
+    }
+
+    /* =========================
+       歷史紀錄
+       ========================= */
+
+    .history{
+      max-height:260px;
+      overflow:auto;
+    }
+
+    .history-item{
+      padding:9px 0;
+      border-bottom:1px solid #edf0f5;
+      cursor:pointer;
+    }
+
+    .history-item:last-child{
+      border:0;
+    }
+
+    .history-expr{
+      font-size:13px;
+    }
+
+    .history-value{
+      font-size:14px;
+      font-weight:700;
+      color:#1d4ed8;
+      margin-top:3px;
+    }
+
+    /* =========================
+       Matrix
+       ========================= */
+
+    .matrix{
+      border-collapse:separate;
+      border-spacing:6px;
+      margin:2px;
+    }
+
+    .matrix input{
+      width:76px;
+      text-align:center;
+      padding:8px;
+    }
+
+    .matrix td{
+      padding:0;
+    }
+
+    .matrix-output{
+      white-space:pre;
+      font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+      font-size:13px;
+      line-height:1.55;
+    }
+
+    .matrix-toolbar{
+      display:grid;
+      grid-template-columns:auto auto 1fr;
+      gap:10px;
+      align-items:end;
+    }
+
+    .matrix-area{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:16px;
+    }
+
+    .matrix-title{
+      font-weight:800;
+      margin:0 0 5px;
+    }
+
+    .pill{
+      display:inline-block;
+      background:#eef2ff;
+      color:#4338ca;
+      border-radius:999px;
+      padding:5px 9px;
+      font-size:11px;
+      font-weight:750;
+    }
+
+    /* =========================
+       Plot
+       ========================= */
+
+    .plot{
+      height:510px;
+      border-radius:14px;
+      overflow:hidden;
+      border:1px solid var(--line);
+      background:#fff;
+    }
+
+    .small-plot{
+      height:380px;
+    }
+
+    /* =========================
+       Switch
+       ========================= */
+
+    .switch{
+      display:inline-flex;
+      padding:3px;
+      background:#edf1f7;
+      border-radius:10px;
+    }
+
+    .switch button{
+      border:0;
+      background:transparent;
+      padding:7px 12px;
+      border-radius:8px;
+      font-weight:700;
+      font-size:12px;
+    }
+
+    .switch button.active{
+      background:#fff;
+      box-shadow:0 1px 5px rgba(0,0,0,.08);
+    }
+
+    .status{
+      font-size:12px;
+      color:var(--muted);
+      margin-top:7px;
+    }
+
+    .footer{
+      color:var(--muted);
+      font-size:12px;
+      padding:20px 4px 5px;
+    }
+
+    /* =========================
+       RWD
+       ========================= */
+
+    @media(max-width:980px){
+
+      .app{
+        grid-template-columns:1fr;
+      }
+
+      .sidebar{
+        position:fixed;
+        left:-285px;
+        z-index:20;
+        width:270px;
+        transition:left .2s;
+      }
+
+      .sidebar.open{
+        left:0;
+        box-shadow:12px 0 40px rgba(0,0,0,.18);
+      }
+
+      .menu-btn{
+        display:inline-grid;
+        place-items:center;
+        width:42px;
+        height:42px;
+        border:0;
+        border-radius:12px;
+        background:#fff;
+        box-shadow:var(--shadow);
+        font-size:20px;
+      }
+
+      .main{
+        padding:15px;
+      }
+
+      .two,
+      .three,
+      .four{
+        grid-template-columns:1fr 1fr;
+      }
+
+      .matrix-area{
+        grid-template-columns:1fr;
+      }
+    }
+
+    @media(max-width:640px){
+
+      .two,
+      .three,
+      .four{
+        grid-template-columns:1fr;
+      }
+
+      .topbar .title h2{
+        font-size:20px;
+      }
+
+      .card{
+        padding:14px;
+      }
+
+      .plot{
+        height:420px;
+      }
+
+      .matrix-toolbar{
+        grid-template-columns:1fr 1fr;
+      }
+
+      .matrix-toolbar .wide{
+        grid-column:1/-1;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="app">
+
+  <!-- ============================================================
+       左側導覽列
+       ============================================================ -->
+  <aside class="sidebar" id="sidebar">
+
+    <div class="brand">
+      <div class="brand-badge">∑</div>
+
+      <div>
+        <h1>應用數學工具箱</h1>
+        <p>Applied Mathematics Lab</p>
+      </div>
+    </div>
+
+    <div class="nav-title">CORE</div>
+
+    <button class="nav-btn active" data-section="calculator">
+      <span class="nav-icon">🧮</span>
+      進階計算機
+    </button>
+
+    <button class="nav-btn" data-section="matrix">
+      <span class="nav-icon">▦</span>
+      線性代數／矩陣
+    </button>
+
+    <button class="nav-btn" data-section="calculus">
+      <span class="nav-icon">∫</span>
+      微積分
+    </button>
+
+    <button class="nav-btn" data-section="statistics">
+      <span class="nav-icon">σ</span>
+      機率與統計
+    </button>
+
+    <div class="nav-title">NUMERICAL</div>
+
+    <button class="nav-btn" data-section="roots">
+      <span class="nav-icon">√</span>
+      方程式求根
+    </button>
+
+    <button class="nav-btn" data-section="ode">
+      <span class="nav-icon">y′</span>
+      ODE 數值解
+    </button>
+
+    <div class="nav-title">VISUAL</div>
+
+    <button class="nav-btn" data-section="plotter">
+      <span class="nav-icon">⌁</span>
+      函數繪圖板
+    </button>
+
+    <div class="sidebar-foot">
+      所有計算皆在你的瀏覽器中執行。
+      此版本不需要後端資料庫；
+      外部 CDN 僅用於載入 Math.js、Plotly.js 與 MathJax。
+    </div>
+
+  </aside>
+
+
+  <!-- ============================================================
+       主要內容區
+       ============================================================ -->
+
+  <main class="main">
+
+    <div class="topbar">
+
+      <div class="row">
+
+        <button class="menu-btn" id="menuBtn">
+          ☰
+        </button>
+
+        <div class="title">
+
+          <h2 id="pageTitle">
+            進階計算機
+          </h2>
+
+          <p id="pageDesc">
+            任意算式、三角函數、對數、指數與複數運算。
+          </p>
+
+        </div>
+
+      </div>
+
+      <div class="badge">
+        ● 前端即時計算
+      </div>
+
+    </div>
+
+
+    <!-- ============================================================
+         1. Advanced Calculator
+         ============================================================ -->
+
+    <section id="calculator" class="section active">
+
+      <div class="grid two">
+
+        <!-- 計算機 -->
+
+        <div class="card">
+
+          <h3>
+            Advanced Calculator
+          </h3>
+
+          <div
+            class="row"
+            style="justify-content:space-between;align-items:end"
+          >
+
+            <div style="flex:1;min-width:220px">
+
+              <label>
+                輸入算式
+              </label>
+
+              <input
+                id="calcExpr"
+                value="sin(30)^2 + log(100,10) + 5!"
+                onkeydown="if(event.key==='Enter')runCalculator()"
+              >
+
+            </div>
+
+
+            <div>
+
+              <label>
+                角度模式
+              </label>
+
+              <div class="switch" id="angleSwitch">
+
+                <button
+                  class="active"
+                  data-angle="rad"
+                >
+                  弧度
+                </button>
+
+                <button
+                  data-angle="deg"
+                >
+                  角度
+                </button>
+
+              </div>
+
+            </div>
+
+          </div>
+
+
+          <div class="actions">
+
+            <button
+              class="btn primary"
+              onclick="runCalculator()"
+            >
+              計算 Enter
+            </button>
+
+            <button
+              class="btn ghost"
+              onclick="insertCalc('pi')"
+            >
+              π
+            </button>
+
+            <button
+              class="btn ghost"
+              onclick="insertCalc('e')"
+            >
+              e
+            </button>
+
+            <button
+              class="btn ghost"
+              onclick="insertCalc('i')"
+            >
+              i
+            </button>
+
+            <button
+              class="btn ghost"
+              onclick="insertCalc('sqrt(')"
+            >
+              √
+            </button>
+
+            <button
+              class="btn ghost"
+              onclick="insertCalc('log(')"
+            >
+              log
+            </button>
+
+            <button
+              class="btn ghost"
+              onclick="insertCalc('ln(')"
+            >
+              ln
+            </button>
+
+            <button
+              class="btn danger"
+              onclick="clearCalc()"
+            >
+              清除
+            </button>
+
+          </div>
+
+
+          <div class="formula">
+            支援：
+            \(+, -, \times, /, ^, !\)；
+            三角：
+            \(\sin,\cos,\tan,\arcsin,\arccos,\arctan\)；
+            對數：
+            \(\ln x,\log_b x\)；
+            複數：
+            \(i^2=-1\)。
+          </div>
+
+
+          <div id="calcResult" class="result">
+
+            <span class="muted">
+              結果會顯示在這裡。
+            </span>
+
+          </div>
+
+        </div>
+
+
+        <!-- 計算歷史 -->
+
+        <div class="card">
+
+          <h3>
+            計算歷史
+          </h3>
+
+          <div class="actions">
+
+            <button
+              class="btn ghost"
+              onclick="clearHistory()"
+            >
+              清除歷史
+            </button>
+
+          </div>
+
+          <div
+            id="calcHistory"
+            class="history"
+          >
+            <div class="muted">
+              尚無紀錄。
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+
+    </section>
+
+
+    <!-- ============================================================
+         2. Matrix
+         ============================================================ -->
+
+    <section id="matrix" class="section">
+
+      <div class="card">
+
+        <div class="matrix-toolbar">
+
+          <div>
+
+            <label>
+              矩陣 A 大小
+            </label>
+
+            <select id="aRows"></select>
+
+            <select id="aCols"></select>
+
+          </div>
+
+
+          <div>
+
+            <label>
+              矩陣 B 大小
+            </label>
+
+            <select id="bRows"></select>
+
+            <select id="bCols"></select>
+
+          </div>
+
+
+          <div
+            class="actions wide"
+            style="margin:0"
+          >
+
+            <button
+              class="btn primary"
+              onclick="buildMatrices()"
+            >
+              建立矩陣
+            </button>
+
+            <button
+              class="btn ghost"
+              onclick="fillSampleMatrices()"
+            >
+              載入範例
+            </button>
+
+          </div>
+
+        </div>
+
+      </div>
+
+
+      <div
+        class="matrix-area"
+        style="margin-top:16px"
+      >
+
+        <div class="card">
+
+          <div class="matrix-title">
+
+            矩陣 A
+
+            <span
+              class="pill"
+              id="aShape"
+            ></span>
+
+          </div>
+
+          <div id="matrixA"></div>
+
+        </div>
+
+
+        <div class="card">
+
+          <div class="matrix-title">
+
+            矩陣 B
+
+            <span
+              class="pill"
+              id="bShape"
+            ></span>
+
+          </div>
+
+          <div id="matrixB"></div>
+
+        </div>
+
+      </div>
+
+
+      <div
+        class="card"
+        style="margin-top:16px"
+      >
+
+        <h3>
+          矩陣運算
+        </h3>
+
+        <div class="actions">
+
+          <button
+            class="btn primary"
+            onclick="matrixOp('add')"
+          >
+            A + B
+          </button>
+
+          <button
+            class="btn primary"
+            onclick="matrixOp('sub')"
+          >
+            A − B
+          </button>
+
+          <button
+            class="btn primary"
+            onclick="matrixOp('mul')"
+          >
+            A × B
+          </button>
+
+          <button
+            class="btn primary"
+            onclick="matrixOp('transA')"
+          >
+            Aᵀ
+          </button>
+
+          <button
+            class="btn primary"
+            onclick="matrixOp('transB')"
+          >
+            Bᵀ
+          </button>
+
+          <button
+            class="btn"
+            onclick="matrixOp('detA')"
+          >
+            det(A)
+          </button>
+
+          <button
+            class="btn"
+            onclick="matrixOp('detB')"
+          >
+            det(B)
+          </button>
+
+          <button
+            class="btn"
+            onclick="matrixOp('invA')"
+          >
+            A⁻¹
+          </button>
+
+          <button
+            class="btn"
+            onclick="matrixOp('invB')"
+          >
+            B⁻¹
+          </button>
+
+          <button
+            class="btn"
+            onclick="matrixOp('rrefA')"
+          >
+            RREF(A)
+          </button>
+
+          <button
+            class="btn"
+            onclick="matrixOp('rrefB')"
+          >
+            RREF(B)
+          </button>
+
+          <button
+            class="btn"
+            onclick="matrixOp('eigsA')"
+          >
+            A 特徵值／特徵向量
+          </button>
+
+          <button
+            class="btn"
+            onclick="matrixOp('eigsB')"
+          >
+            B 特徵值／特徵向量
+          </button>
+
+        </div>
+
+
+        <div
+          class="row"
+          style="margin-top:12px"
+        >
+
+          <div style="width:190px">
+
+            <label>
+              純量 k
+            </label>
+
+            <input
+              id="scalarK"
+              value="2"
+            >
+
+          </div>
+
+          <button
+            class="btn success"
+            onclick="matrixOp('scalarA')"
+          >
+            kA
+          </button>
+
+          <button
+            class="btn success"
+            onclick="matrixOp('scalarB')"
+          >
+            kB
+          </button>
+
+        </div>
+
+
+        <div
+          id="matrixResult"
+          class="result"
+        >
+
+          <span class="muted">
+            矩陣運算結果。
+          </span>
+
+        </div>
+
+      </div>
+
+    </section>
+
+
+    <!-- ============================================================
+         3. Calculus
+         ============================================================ -->
+
+    <section id="calculus" class="section">
+
+      <div class="grid two">
+
+        <!-- 微分 -->
+
+        <div class="card">
+
+          <h3>
+            數值微分
+          </h3>
+
+          <p class="muted">
+            中心差分近似一階與二階導數。
+          </p>
+
+          <div class="grid two">
+
+            <div>
+
+              <label>
+                f(x)
+              </label>
+
+              <input
+                id="diffF"
+                value="sin(x)+x^2"
+              >
+
+            </div>
+
+            <div>
+
+              <label>
+                x₀
+              </label>
+
+              <input
+                id="diffX0"
+                value="1"
+              >
+
+            </div>
+
+            <div>
+
+              <label>
+                步長 h
+              </label>
+
+              <input
+                id="diffH"
+                value="0.0001"
+              >
+
+            </div>
+
+            <div>
+
+              <label>
+                角度模式
+              </label>
+
+              <select id="diffAngle">
+                <option value="rad">弧度</option>
+                <option value="deg">角度</option>
+              </select>
+
+            </div>
+
+          </div>
+
+
+          <div class="actions">
+
+            <button
+              class="btn primary"
+              onclick="runDerivative()"
+            >
+              計算導數
+            </button>
+
+          </div>
+
+
+          <div
+            id="diffResult"
+            class="result"
+          ></div>
+
+        </div>
+
+
+        <!-- 積分 -->
+
+        <div class="card">
+
+          <h3>
+            定積分
+          </h3>
+
+          <p class="muted">
+            支援梯形法與 Simpson 1/3 法。
+          </p>
+
+          <div class="grid two">
+
+            <div>
+
+              <label>
+                f(x)
+              </label>
+
+              <input
+                id="intF"
+                value="x^2"
+              >
+
+            </div>
+
+            <div>
+
+              <label>
+                方法
+              </label>
+
+              <select id="intMethod">
+
+                <option value="simpson">
+                  Simpson
+                </option>
+
+                <option value="trap">
+                  梯形法
+                </option>
+
+              </select>
+
+            </div>
+
+
+            <div>
+
+              <label>
+                a
+              </label>
+
+              <input
+                id="intA"
+                value="0"
+              >
+
+            </div>
+
+
+            <div>
+
+              <label>
+                b
+              </label>
+
+              <input
+                id="intB"
+                value="2"
+              >
+
+            </div>
+
+
+            <div>
+
+              <label>
+                分割數 n
+              </label>
+
+              <input
+                id="intN"
+                value="1000"
+              >
+
+            </div>
+
+
+            <div>
+
+              <label>
+                角度模式
+              </label>
+
+              <select id="intAngle">
+                <option value="rad">弧度</option>
+                <option value="deg">角度</option>
+              </select>
+
+            </div>
+
+          </div>
+
+
+          <div class="actions">
+
+            <button
+              class="btn primary"
+              onclick="runIntegral()"
+            >
+              計算積分
+            </button>
+
+          </div>
+
+
+          <div
+            id="intResult"
+            class="result"
+          ></div>
+
+        </div>
+
+      </div>
+
+
+      <!-- 級數 -->
+
+      <div
+        class="card"
+        style="margin-top:16px"
+      >
+
+        <h3>
+          有限級數與有限乘積
+        </h3>
+
+        <div class="grid four">
+
+          <div>
+
+            <label>
+              項式 term(k)
+            </label>
+
+            <input
+              id="sumTerm"
+              value="1/k^2"
+            >
+
+          </div>
+
+
+          <div>
+
+            <label>
+              起點 k
+            </label>
+
+            <input
+              id="sumStart"
+              value="1"
+            >
+
+          </div>
+
+
+          <div>
+
+            <label>
+              終點 k
+            </label>
+
+            <input
+              id="sumEnd"
+              value="100"
+            >
+
+          </div>
+
+
+          <div>
+
+            <label>
+              模式
+            </label>
+
+            <select id="sumMode">
+
+              <option value="sum">
+                ∑ 求和
+              </option>
+
+              <option value="prod">
+                ∏ 求積
+              </option>
+
+            </select>
+
+          </div>
+
+        </div>
+
+
+        <div class="actions">
+
+          <button
+            class="btn primary"
+            onclick="runSeries()"
+          >
+            執行
+          </button>
+
+        </div>
+
+
+        <div
+          id="seriesResult"
+          class="result"
+        ></div>
+
+
+        <div class="formula">
+          例如：
+          \(\sum_{k=1}^{100} 1/k^2\)、
+          \(\prod_{k=1}^{10} k\)。
+        </div>
+
+      </div>
+
+    </section>
+
+
+    <!-- ============================================================
+         4. Statistics
+         ============================================================ -->
+
+    <section id="statistics" class="section">
+
+      <div class="grid two">
+
+        <!-- 描述統計 -->
+
+        <div class="card">
+
+          <h3>
+            資料集統計
+          </h3>
+
+          <label>
+            輸入資料（空白、逗號、換行皆可）
+          </label>
+
+          <textarea id="dataInput">12, 15, 17, 17, 19, 21, 24, 24, 24, 30</textarea>
+
+
+          <div class="actions">
+
+            <button
+              class="btn primary"
+              onclick="runStats()"
+            >
+              分析資料
+            </button>
+
+            <button
+              class="btn ghost"
+              onclick="document.getElementById('dataInput').value=''"
+            >
+              清空
+            </button>
+
+          </div>
+
+
+          <div
+            id="statsResult"
+            class="result"
+          ></div>
+
+        </div>
+
+
+        <!-- 排列組合 -->
+
+        <div class="card">
+
+          <h3>
+            排列、組合與階乘
+          </h3>
+
+          <div class="grid three">
+
+            <div>
+
+              <label>
+                n
+              </label>
+
+              <input
+                id="combN"
+                value="10"
+              >
+
+            </div>
+
+
+            <div>
+
+              <label>
+                k
+              </label>
+
+              <input
+                id="combK"
+                value="3"
+              >
+
+            </div>
+
+
+            <div>
+
+              <label>
+                運算
+              </label>
+
+              <select id="combOp">
+
+                <option value="P">
+                  P(n,k)
+                </option>
+
+                <option value="C">
+                  C(n,k)
+                </option>
+
+                <option value="F">
+                  n!
+                </option>
+
+              </select>
+
+            </div>
+
+          </div>
+
+
+          <div class="actions">
+
+            <button
+              class="btn primary"
+              onclick="runComb()"
+            >
+              計算
+            </button>
+
+          </div>
+
+
+          <div
+            id="combResult"
+            class="result"
+          ></div>
+
+        </div>
+
+      </div>
+
+
+      <!-- Normal Distribution -->
+
+      <div
+        class="card"
+        style="margin-top:16px"
+      >
+
+        <h3>
+          常態分佈 Normal Distribution
+        </h3>
+
+        <div class="grid four">
+
+          <div>
+
+            <label>
+              μ
+            </label>
+
+            <input
+              id="normalMu"
+              value="0"
+            >
+
+          </div>
+
+
+          <div>
+
+            <label>
+              σ &gt; 0
+            </label>
+
+            <input
+              id="normalSigma"
+              value="1"
+            >
+
+          </div>
+
+
+          <div>
+
+            <label>
+              x
+            </label>
+
+            <input
+              id="normalX"
+              value="1.96"
+            >
+
+          </div>
+
+
+          <div>
+
+            <label>
+              模式
+            </label>
+
+            <select id="normalMode">
+
+              <option value="pdf">
+                PDF
+              </option>
+
+              <option value="cdf">
+                CDF
+              </option>
+
+            </select>
+
+          </div>
+
+        </div>
+
+
+        <div class="actions">
+
+          <button
+            class="btn primary"
+            onclick="runNormal()"
+          >
+            計算
+          </button>
+
+        </div>
+
+
+        <div
+          id="normalResult"
+          class="result"
+        ></div>
+
+      </div>
+
+    </section>
+
+
+    <!-- ============================================================
+         5. Root Finding
+         ============================================================ -->
+
+    <section id="roots" class="section">
+
+      <div class="card">
+
+        <h3>
+          單變數方程式求根 f(x)=0
+        </h3>
+
+        <div class="grid four">
+
+          <div>
+
+            <label>
+              f(x)
+            </label>
+
+            <input
+              id="rootF"
+              value="x^3-x-2"
+            >
+
+          </div>
+
+
+          <div>
+
+            <label>
+              方法
+            </label>
+
+            <select id="rootMethod">
+
+              <option value="bisection">
+                二分法
+              </option>
+
+              <option value="newton">
+                Newton-Raphson
+              </option>
+
+            </select>
+
+          </div>
+
+
+          <div>
+
+            <label>
+              左端 a / 初值 x₀
+            </label>
+
+            <input
+              id="rootA"
+              value="1"
+            >
+
+          </div>
+
+
+          <div>
+
+            <label>
+              右端 b（二分法）/ h（Newton）
+            </label>
+
+            <input
+              id="rootB"
+              value="2"
+            >
+
+          </div>
+
+        </div>
+
+
+        <div
+          class="grid three"
+          style="margin-top:12px"
+        >
+
+          <div>
+
+            <label>
+              最大迭代
+            </label>
+
+            <input
+              id="rootIter"
+              value="100"
+            >
+
+          </div>
+
+
+          <div>
+
+            <label>
+              容許誤差
+            </label>
+
+            <input
+              id="rootTol"
+              value="1e-10"
+            >
+
+          </div>
+
+
+          <div>
+
+            <label>
+              角度模式
+            </label>
+
+            <select id="rootAngle">
+
+              <option value="rad">
+                弧度
+              </option>
+
+              <option value="deg">
+                角度
+              </option>
+
+            </select>
+
+          </div>
+
+        </div>
+
+
+        <div class="actions">
+
+          <button
+            class="btn primary"
+            onclick="runRoot()"
+          >
+            開始求根
+          </button>
+
+        </div>
+
+
+        <div
+          id="rootResult"
+          class="result"
+        ></div>
+
+      </div>
+
+    </section>
+
+
+    <!-- ============================================================
+         6. ODE
+         ============================================================ -->
+
+    <section id="ode" class="section">
+
+      <div class="card">
+
+        <h3>
+          常微分方程 ODE 數值解
+        </h3>
+
+        <p class="muted">
+          解一階問題：
+          y′ = f(x,y)，
+          y(x₀)=y₀。
+          支援 Euler 與 RK4。
+        </p>
+
+
+        <div class="grid four">
+
+          <div>
+
+            <label>
+              f(x,y)
+            </label>
+
+            <input
+              id="odeF"
+              value="x + y"
+            >
+
+          </div>
+
+
+          <div>
+
+            <label>
+              方法
+            </label>
+
+            <select id="odeMethod">
+
+              <option value="rk4">
+                RK4
+              </option>
+
+              <option value="euler">
+                Euler
+              </option>
+
+            </select>
+
+          </div>
+
+
+          <div>
+
+            <label>
+              x₀
+            </label>
+
+            <input
+              id="odeX0"
+              value="0"
+            >
+
+          </div>
+
+
+          <div>
+
+            <label>
+              y₀
+            </label>
+
+            <input
+              id="odeY0"
+              value="1"
+            >
+
+          </div>
+
+
+          <div>
+
+            <label>
+              x 終點
+            </label>
+
+            <input
+              id="odeEnd"
+              value="2"
+            >
+
+          </div>
+
+
+          <div>
+
+            <label>
+              步長 h
+            </label>
+
+            <input
+              id="odeH"
+              value="0.05"
+            >
+
+          </div>
+
+
+          <div>
+
+            <label>
+              角度模式
+            </label>
+
+            <select id="odeAngle">
+
+              <option value="rad">
+                弧度
+              </option>
+
+              <option value="deg">
+                角度
+              </option>
+
+            </select>
+
+          </div>
+
+
+          <div>
+
+            <label>
+              輸出點數上限
+            </label>
+
+            <input
+              id="odeMax"
+              value="2000"
+            >
+
+          </div>
+
+        </div>
+
+
+        <div class="actions">
+
+          <button
+            class="btn primary"
+            onclick="runODE()"
+          >
+            求解 ODE
+          </button>
+
+        </div>
+
+
+        <div
+          id="odeResult"
+          class="result"
+        ></div>
+
+      </div>
+
+
+      <div
+        class="card"
+        style="margin-top:16px"
+      >
+
+        <div
+          id="odePlot"
+          class="plot small-plot"
+        ></div>
+
+      </div>
+
+    </section>
+
+
+    <!-- ============================================================
+         7. Function Plotter
+         ============================================================ -->
+
+    <section id="plotter" class="section">
+
+      <div class="card">
+
+        <h3>
+          Interactive Function Plotter
+        </h3>
+
+        <div class="grid four">
+
+          <div>
+
+            <label>
+              f(x)
+            </label>
+
+            <input
+              id="plotF"
+              value="sin(x) + 0.2*x"
+            >
+
+          </div>
+
+
+          <div>
+
+            <label>
+              x 最小值
+            </label>
+
+            <input
+              id="plotMin"
+              value="-10"
+            >
+
+          </div>
+
+
+          <div>
+
+            <label>
+              x 最大值
+            </label>
+
+            <input
+              id="plotMax"
+              value="10"
+            >
+
+          </div>
+
+
+          <div>
+
+            <label>
+              取樣點數
+            </label>
+
+            <input
+              id="plotN"
+              value="1200"
+            >
+
+          </div>
+
+
+          <div>
+
+            <label>
+              角度模式
+            </label>
+
+            <select id="plotAngle">
+
+              <option value="rad">
+                弧度
+              </option>
+
+              <option value="deg">
+                角度
+              </option>
+
+            </select>
+
+          </div>
+
+        </div>
+
+
+        <div class="actions">
+
+          <button
+            class="btn primary"
+            onclick="runPlot()"
+          >
+            繪圖
+          </button>
+
+          <button
+            class="btn ghost"
+            onclick="plotDerivative()"
+          >
+            繪製數值導數
+          </button>
+
+        </div>
+
+
+        <div
+          id="plotResult"
+          class="status"
+        ></div>
+
+      </div>
+
+
+      <div
+        class="card"
+        style="margin-top:16px"
+      >
+
+        <div
+          id="mainPlot"
+          class="plot"
+        ></div>
+
+      </div>
+
+    </section>
+
+
+    <div class="footer">
+
+      © 2026 Applied Mathematics Toolbox ·
+      本頁計算結果為數值近似，
+      重要課業、研究或工程用途請自行交叉驗證。
+
+    </div>
+
+  </main>
+
+</div>
+
+
+<script>
+
+// ================================================================
+// 應用數學系專用—全功能線上數學工具箱
+// 所有互動、計算與繪圖均在此單一 HTML 中完成。
+// ================================================================
+
+
+const state = {
+  angle: 'rad',
+  section: 'calculator',
+
+  history: JSON.parse(
+    localStorage.getItem('amt_history') || '[]'
+  )
+};
+
+
+const $ = id => document.getElementById(id);
+
+
+const fmt = (v, precision=12) => {
+
+  try{
+
+    return math.format(
+      v,
+      {
+        precision,
+        fraction:false
+      }
+    );
+
+  }catch{
+
+    return String(v);
+
+  }
+
+};
+
+
+const num = id => Number($(id).value);
+
+
+const safeInt = id =>
+  Math.max(
+    1,
+    Math.floor(
+      Number($(id).value)
+    )
+  );
+
+
+// ================================================================
+// 根據角度模式建立函數環境
+// ================================================================
+
+function scopeFor(
+  mode = state.angle,
+  extra = {}
+){
+
+  const rad = x =>
+    Number(x) * Math.PI / 180;
+
+  const deg = x =>
+    Number(x) * 180 / Math.PI;
+
+
+  const S = {
+
+    pi: Math.PI,
+
+    e: Math.E,
+
+
+    sin: x =>
+      mode === 'deg'
+        ? Math.sin(rad(x))
+        : Math.sin(x),
+
+
+    cos: x =>
+      mode === 'deg'
+        ? Math.cos(rad(x))
+        : Math.cos(x),
+
+
+    tan: x =>
+      mode === 'deg'
+        ? Math.tan(rad(x))
+        : Math.tan(x),
+
+
+    asin: x =>
+      mode === 'deg'
+        ? deg(Math.asin(x))
+        : Math.asin(x),
+
+
+    acos: x =>
+      mode === 'deg'
+        ? deg(Math.acos(x))
+        : Math.acos(x),
+
+
+    atan: x =>
+      mode === 'deg'
+        ? deg(Math.atan(x))
+        : Math.atan(x),
+
+
+    log10: x =>
+      Math.log10(x),
+
+
+    ln: x =>
+      Math.log(x),
+
+
+    logb: (x,b) =>
+      Math.log(x) / Math.log(b),
+
+
+    ...extra
+
+  };
+
+
+  return S;
+
+}
+
+
+function evalExpr(
+  expr,
+  variables = {},
+  mode = state.angle
+){
+
+  if(!String(expr).trim()){
+
+    throw new Error('請輸入算式。');
+
+  }
+
+
+  return math.evaluate(
+    String(expr).replace(/π/g,'pi'),
+    {
+      ...scopeFor(mode),
+      ...variables
+    }
+  );
+
+}
+
+
+function setResult(
+  id,
+  content,
+  ok=true
+){
+
+  $(id).className =
+    'result ' +
+    (ok ? 'ok' : 'err');
+
+  $(id).innerHTML = content;
+
+}
+
+
+function errorResult(
+  id,
+  err
+){
+
+  setResult(
+    id,
+    `<b>計算錯誤：</b> ${escapeHtml(
+      err.message || String(err)
+    )}`,
+    false
+  );
+
+}
+
+
+function escapeHtml(s){
+
+  return String(s).replace(
+    /[&<>"']/g,
+    c => ({
+      '&':'&amp;',
+      '<':'&lt;',
+      '>':'&gt;',
+      '"':'&quot;',
+      "'":'&#39;'
+    }[c])
+  );
+
+}
+
+
+function refreshMathJax(){
+
+  if(
+    window.MathJax &&
+    MathJax.typesetPromise
+  ){
+
+    MathJax.typesetPromise();
+
+  }
+
+}
+
+
+// ================================================================
+// Sidebar / UI
+// ================================================================
+
+const titles = {
+
+  calculator:[
+    '進階計算機',
+    '任意算式、三角函數、對數、指數與複數運算。'
+  ],
+
+  matrix:[
+    '線性代數／矩陣',
+    '基本矩陣運算、行列式、逆矩陣、RREF、特徵值與特徵向量。'
+  ],
+
+  calculus:[
+    '微積分',
+    '數值微分、定積分、有限級數與乘積。'
+  ],
+
+  statistics:[
+    '機率與統計',
+    '描述統計、排列組合與常態分佈。'
+  ],
+
+  roots:[
+    '方程式求根',
+    '二分法與 Newton-Raphson 數值求根。'
+  ],
+
+  ode:[
+    'ODE 數值解',
+    'Euler 與四階 Runge-Kutta 求解一階 ODE。'
+  ],
+
+  plotter:[
+    '函數繪圖板',
+    '互動式 2D 函數圖形、縮放、平移與導數比較。'
+  ]
+
+};
+
+
+document
+  .querySelectorAll('.nav-btn')
+  .forEach(
+    btn =>
+      btn.addEventListener(
+        'click',
+        () =>
+          showSection(
+            btn.dataset.section
+          )
+      )
+  );
+
+
+$('menuBtn')
+  .addEventListener(
+    'click',
+    () =>
+      $('sidebar').classList.toggle('open')
+  );
+
+
+function showSection(id){
+
+  state.section = id;
+
+
+  document
+    .querySelectorAll('.section')
+    .forEach(
+      s =>
+        s.classList.toggle(
+          'active',
+          s.id === id
+        )
+    );
+
+
+  document
+    .querySelectorAll('.nav-btn')
+    .forEach(
+      b =>
+        b.classList.toggle(
+          'active',
+          b.dataset.section === id
+        )
+    );
+
+
+  $('pageTitle').textContent =
+    titles[id][0];
+
+  $('pageDesc').textContent =
+    titles[id][1];
+
+
+  $('sidebar')
+    .classList
+    .remove('open');
+
+
+  if(id === 'plotter'){
+
+    setTimeout(
+      runPlot,
+      50
+    );
+
+  }
+
+
+  if(
+    id === 'ode' &&
+    $('odePlot').data
+  ){
+
+    setTimeout(
+      () =>
+        Plotly.Plots.resize('odePlot'),
+      50
+    );
+
+  }
+
+}
+
+
+document
+  .querySelectorAll(
+    '#angleSwitch button'
+  )
+  .forEach(
+    b =>
+      b.addEventListener(
+        'click',
+        () => {
+
+          document
+            .querySelectorAll(
+              '#angleSwitch button'
+            )
+            .forEach(
+              x =>
+                x.classList.remove(
+                  'active'
+                )
+            );
+
+
+          b.classList.add(
+            'active'
+          );
+
+
+          state.angle =
+            b.dataset.angle;
+
+        }
+      )
+  );
+
+
+// ================================================================
+// Calculator
+// ================================================================
+
+function insertCalc(s){
+
+  const el = $('calcExpr');
+
+  const a =
+    el.selectionStart ??
+    el.value.length;
+
+  const b =
+    el.selectionEnd ??
+    a;
+
+
+  el.value =
+    el.value.slice(0,a) +
+    s +
+    el.value.slice(b);
+
+
+  el.focus();
+
+
+  el.selectionStart =
+    el.selectionEnd =
+      a + s.length;
+
+}
+
+
+function clearCalc(){
+
+  $('calcExpr').value = '';
+
+  setResult(
+    'calcResult',
+    '<span class="muted">結果會顯示在這裡。</span>'
+  );
+
+}
+
+
+function runCalculator(){
+
+  const expr =
+    $('calcExpr').value;
+
+
+  try{
+
+    const value =
+      evalExpr(
+        expr,
+        {},
+        state.angle
+      );
+
+
+    const pretty =
+      fmt(value,14);
+
+
+    setResult(
+      'calcResult',
+      `
+        <div class="big-result">
+          ${escapeHtml(pretty)}
+        </div>
+
+        <div class="status">
+          角度模式：
+          ${state.angle === 'deg'
+            ? 'Degree'
+            : 'Radian'}
+        </div>
+      `
+    );
+
+
+    state.history.unshift({
+
+      expr,
+
+      value:pretty,
+
+      ts:
+        new Date()
+          .toLocaleTimeString('zh-TW')
+
+    });
+
+
+    state.history =
+      state.history.slice(0,30);
+
+
+    localStorage.setItem(
+      'amt_history',
+      JSON.stringify(
+        state.history
+      )
+    );
+
+
+    renderHistory();
+
+  }catch(e){
+
+    errorResult(
+      'calcResult',
+      e
+    );
+
+  }
+
+}
+
+
+function renderHistory(){
+
+  $('calcHistory').innerHTML =
+    state.history.length
+
+      ? state.history
+          .map(
+            h => `
+              <div
+                class="history-item"
+                onclick="document.getElementById('calcExpr').value=${JSON.stringify(h.expr)};runCalculator()"
+              >
+
+                <div class="history-expr">
+                  ${escapeHtml(h.expr)}
+                </div>
+
+                <div class="history-value">
+                  = ${escapeHtml(h.value)}
+
+                  <span class="muted">
+                    · ${h.ts}
+                  </span>
+                </div>
+
+              </div>
+            `
+          )
+          .join('')
+
+      : '<div class="muted">尚無紀錄。</div>';
+
+}
+
+
+function clearHistory(){
+
+  state.history = [];
+
+  localStorage.removeItem(
+    'amt_history'
+  );
+
+  renderHistory();
+
+}
+
+
+// ================================================================
+// Matrix
+// ================================================================
+
+function fillSelect(id){
+
+  const s = $(id);
+
+  s.innerHTML = '';
+
+  for(let i=1;i<=8;i++){
+
+    const o =
+      document.createElement('option');
+
+    o.value = i;
+    o.textContent = i;
+
+    s.appendChild(o);
+
+  }
+
+}
+
+
+[
+  'aRows',
+  'aCols',
+  'bRows',
+  'bCols'
+].forEach(fillSelect);
+
+
+$('aRows').value = 3;
+$('aCols').value = 3;
+$('bRows').value = 3;
+$('bCols').value = 3;
+
+
+function randomMatrix(r,c){
+
+  return Array.from(
+    {
+      length:r
+    },
+    () =>
+      Array.from(
+        {
+          length:c
+        },
+        () =>
+          Math.floor(
+            Math.random()*9
+          ) - 4
+      )
+  );
+
+}
+
+
+function matrixHtml(
+  id,
+  r,
+  c,
+  data
+){
+
+  let h =
+    '<div class="table-wrap">' +
+    '<table class="matrix"><tbody>';
+
+
+  for(let i=0;i<r;i++){
+
+    h += '<tr>';
+
+    for(let j=0;j<c;j++){
+
+      h += `
+        <td>
+
+          <input
+            type="number"
+            step="any"
+            id="${id}_${i}_${j}"
+            value="${
+              data?.[i]?.[j] ?? 0
+            }"
+          >
+
+        </td>
+      `;
+
+    }
+
+    h += '</tr>';
+
+  }
+
+
+  return h +
+    '</tbody></table></div>';
+
+}
+
+
+function buildMatrices(){
+
+  const ar =
+    +$('aRows').value;
+
+  const ac =
+    +$('aCols').value;
+
+  const br =
+    +$('bRows').value;
+
+  const bc =
+    +$('bCols').value;
+
+
+  $('aShape').textContent =
+    `${ar} × ${ac}`;
+
+  $('bShape').textContent =
+    `${br} × ${bc}`;
+
+
+  $('matrixA').innerHTML =
+    matrixHtml(
+      'A',
+      ar,
+      ac
+    );
+
+
+  $('matrixB').innerHTML =
+    matrixHtml(
+      'B',
+      br,
+      bc
+    );
+
+}
+
+
+function getMatrix(id){
+
+  const rows =
+    id === 'A'
+      ? +$('aRows').value
+      : +$('bRows').value;
+
+
+  const cols =
+    id === 'A'
+      ? +$('aCols').value
+      : +$('bCols').value;
+
+
+  return Array.from(
+    {
+      length:rows
+    },
+    (_,i) =>
+      Array.from(
+        {
+          length:cols
+        },
+        (_,j) =>
+          Number(
+            $(
+              `${id}_${i}_${j}`
+            ).value
+          )
+      )
+  );
+
+}
+
+
+function assertSame(
+  a,
+  b,
+  msg
+){
+
+  if(
+    a.length !== b.length ||
+    a[0].length !== b[0].length
+  ){
+
+    throw new Error(msg);
+
+  }
+
+}
+
+
+// 自行實作 RREF，避免不同套件版本對 API 的影響。
+function rref(input){
+
+  const A =
+    input.map(
+      r =>
+        r.map(Number)
+    );
+
+
+  let lead = 0;
+
+  const rows =
+    A.length;
+
+  const cols =
+    A[0].length;
+
+
+  for(
+    let r=0;
+    r<rows && lead<cols;
+    r++
+  ){
+
+    let i = r;
+
+
+    while(
+      i<rows &&
+      Math.abs(
+        A[i][lead]
+      ) < 1e-12
+    ){
+
+      i++;
+
+    }
+
+
+    if(i === rows){
+
+      lead++;
+      r--;
+      continue;
+
+    }
+
+
+    [
+      A[i],
+      A[r]
+    ] =
+    [
+      A[r],
+      A[i]
+    ];
+
+
+    const lv =
+      A[r][lead];
+
+
+    for(
+      let j=0;
+      j<cols;
+      j++
+    ){
+
+      A[r][j] /= lv;
+
+    }
+
+
+    for(
+      i=0;
+      i<rows;
+      i++
+    ){
+
+      if(i !== r){
+
+        const lv2 =
+          A[i][lead];
+
+
+        if(
+          Math.abs(lv2) > 1e-12
+        ){
+
+          for(
+            let j=0;
+            j<cols;
+            j++
+          ){
+
+            A[i][j] -=
+              lv2 *
+              A[r][j];
+
+          }
+
+        }
+
+      }
+
+    }
+
+
+    lead++;
+
+  }
+
+
+  return A.map(
+    row =>
+      row.map(
+        x =>
+          Math.abs(x) < 1e-10
+            ? 0
+            : x
+      )
+  );
+
+}
+
+
+function matrixString(M){
+
+  return Array.isArray(M[0])
+
+    ? M
+        .map(
+          r =>
+            '[ ' +
+            r
+              .map(
+                x => fmt(x,8)
+              )
+              .join('\t') +
+            ' ]'
+        )
+        .join('\n')
+
+    : M
+        .map(
+          x => fmt(x,8)
+        )
+        .join(', ');
+
+}
+
+
+function showMatrixResult(
+  title,
+  value,
+  extra=''
+){
+
+  const text =
+    typeof value === 'string'
+      ? value
+      : matrixString(value);
+
+
+  setResult(
+    'matrixResult',
+
+    `
+      <h4>
+        ${escapeHtml(title)}
+      </h4>
+
+      <div class="matrix-output">
+        ${escapeHtml(text)}
+      </div>
+
+      ${extra}
+    `
+  );
+
+}
+
+
+function matrixOp(op){
+
+  try{
+
+    const A =
+      getMatrix('A');
+
+    const B =
+      getMatrix('B');
+
+    let out;
+
+
+    if(op === 'add'){
+
+      assertSame(
+        A,
+        B,
+        'A 與 B 維度必須相同。'
+      );
+
+      out =
+        math.add(
+          A,
+          B
+        );
+
+      showMatrixResult(
+        'A + B',
+        out
+      );
+
+    }
+
+
+    else if(op === 'sub'){
+
+      assertSame(
+        A,
+        B,
+        'A 與 B 維度必須相同。'
+      );
+
+      out =
+        math.subtract(
+          A,
+          B
+        );
+
+      showMatrixResult(
+        'A − B',
+        out
+      );
+
+    }
+
+
+    else if(op === 'mul'){
+
+      if(
+        A[0].length !== B.length
+      ){
+
+        throw new Error(
+          '矩陣乘法要求 A 的欄數 = B 的列數。'
+        );
+
+      }
+
+      out =
+        math.multiply(
+          A,
+          B
+        );
+
+      showMatrixResult(
+        'A × B',
+        out
+      );
+
+    }
+
+
+    else if(op === 'transA'){
+
+      showMatrixResult(
+        'Aᵀ',
+        math.transpose(A)
+      );
+
+    }
+
+
+    else if(op === 'transB'){
+
+      showMatrixResult(
+        'Bᵀ',
+        math.transpose(B)
+      );
+
+    }
+
+
+    else if(op === 'detA'){
+
+      if(
+        A.length !==
+        A[0].length
+      ){
+
+        throw new Error(
+          'det(A) 要求 A 為方陣。'
+        );
+
+      }
+
+      showMatrixResult(
+        'det(A)',
+        fmt(
+          math.det(A),
+          12
+        )
+      );
+
+    }
+
+
+    else if(op === 'detB'){
+
+      if(
+        B.length !==
+        B[0].length
+      ){
+
+        throw new Error(
+          'det(B) 要求 B 為方陣。'
+        );
+
+      }
+
+      showMatrixResult(
+        'det(B)',
+        fmt(
+          math.det(B),
+          12
+        )
+      );
+
+    }
+
+
+    else if(op === 'invA'){
+
+      if(
+        A.length !==
+        A[0].length
+      ){
+
+        throw new Error(
+          'A 必須是方陣。'
+        );
+
+      }
+
+      showMatrixResult(
+        'A⁻¹',
+        math.inv(A)
+      );
+
+    }
+
+
+    else if(op === 'invB'){
+
+      if(
+        B.length !==
+        B[0].length
+      ){
+
+        throw new Error(
+          'B 必須是方陣。'
+        );
+
+      }
+
+      showMatrixResult(
+        'B⁻¹',
+        math.inv(B)
+      );
+
+    }
+
+
+    else if(op === 'rrefA'){
+
+      showMatrixResult(
+        'RREF(A)',
+        rref(A)
+      );
+
+    }
+
+
+    else if(op === 'rrefB'){
+
+      showMatrixResult(
+        'RREF(B)',
+        rref(B)
+      );
+
+    }
+
+
+    else if(op === 'scalarA'){
+
+      showMatrixResult(
+        `${$('scalarK').value}A`,
+        math.multiply(
+          Number(
+            $('scalarK').value
+          ),
+          A
+        )
+      );
+
+    }
+
+
+    else if(op === 'scalarB'){
+
+      showMatrixResult(
+        `${$('scalarK').value}B`,
+        math.multiply(
+          Number(
+            $('scalarK').value
+          ),
+          B
+        )
+      );
+
+    }
+
+
+    else if(op === 'eigsA'){
+
+      showEigen(
+        A,
+        'A'
+      );
+
+    }
+
+
+    else if(op === 'eigsB'){
+
+      showEigen(
+        B,
+        'B'
+      );
+
+    }
+
+  }catch(e){
+
+    errorResult(
+      'matrixResult',
+      e
+    );
+
+  }
+
+}
+
+
+function showEigen(
+  A,
+  name
+){
+
+  if(
+    A.length !==
+    A[0].length
+  ){
+
+    throw new Error(
+      '特徵值／特徵向量要求方陣。'
+    );
+
+  }
+
+
+  const ans =
+    math.eigs(
+      A,
+      {
+        eigenvectors:true,
+        precision:1e-10
+      }
+    );
+
+
+  const vals =
+    Array.from(
+      ans.values || []
+    )
+    .map(
+      v => fmt(v,10)
+    )
+    .join(', ');
+
+
+  let vecs =
+    (ans.eigenvectors || [])
+      .map(
+        (ev,i) =>
+          `λ = ${fmt(ev.value,10)}
+v = [ ${matrixString(
+            Array.isArray(ev.vector)
+              ? ev.vector
+              : ev.vector.toArray()
+          )} ]`
+      )
+      .join('\n\n');
+
+
+  showMatrixResult(
+
+    `${name} 特徵值／特徵向量`,
+
+    `特徵值：${vals}\n\n${vecs}`,
+
+    `
+      <div class="status">
+        Math.js 使用數值特徵分解；
+        接近重根或病態矩陣時請交叉驗證。
+      </div>
+    `
+
+  );
+
+}
+
+
+function fillSampleMatrices(){
+
+  buildMatrices();
+
+
+  const A = [
+    [1,2,3],
+    [0,4,5],
+    [1,0,6]
+  ];
+
+
+  const B = [
+    [7,8,9],
+    [2,4,6],
+    [1,3,5]
+  ];
+
+
+  for(
+    let i=0;
+    i<3;
+    i++
+  ){
+
+    for(
+      let j=0;
+      j<3;
+      j++
+    ){
+
+      $(
+        `A_${i}_${j}`
+      ).value =
+        A[i][j];
+
+
+      $(
+        `B_${i}_${j}`
+      ).value =
+        B[i][j];
+
+    }
+
+  }
+
+}
+
+
+buildMatrices();
+
+
+// ================================================================
+// Calculus
+// ================================================================
+
+function f1(
+  expr,
+  x,
+  mode
+){
+
+  return Number(
+    evalExpr(
+      expr,
+      {x},
+      mode
+    )
+  );
+
+}
+
+
+function runDerivative(){
+
+  try{
+
+    const expr =
+      $('diffF').value;
+
+    const x =
+      num('diffX0');
+
+    const h =
+      Math.abs(
+        num('diffH')
+      );
+
+    const mode =
+      $('diffAngle').value;
+
+
+    if(!(h > 0)){
+
+      throw new Error(
+        'h 必須 > 0。'
+      );
+
+    }
+
+
+    const d1 =
+      (
+        f1(expr,x+h,mode) -
+        f1(expr,x-h,mode)
+      ) /
+      (2*h);
+
+
+    const d2 =
+      (
+        f1(expr,x+h,mode) -
+        2*f1(expr,x,mode) +
+        f1(expr,x-h,mode)
+      ) /
+      (h*h);
+
+
+    setResult(
+      'diffResult',
+
+      `
+        <div class="grid two">
+
+          <div class="kpi">
+
+            <div class="label">
+              f′(x₀)
+            </div>
+
+            <div class="value">
+              ${fmt(d1,12)}
+            </div>
+
+          </div>
+
+
+          <div class="kpi">
+
+            <div class="label">
+              f″(x₀)
+            </div>
+
+            <div class="value">
+              ${fmt(d2,12)}
+            </div>
+
+          </div>
+
+        </div>
+
+        <div class="status">
+          中心差分：h = ${h}
+        </div>
+      `
+    );
+
+  }catch(e){
+
+    errorResult(
+      'diffResult',
+      e
+    );
+
+  }
+
+}
+
+
+function runIntegral(){
+
+  try{
+
+    let expr =
+      $('intF').value;
+
+    let a =
+      num('intA');
+
+    let b =
+      num('intB');
+
+    let n =
+      safeInt('intN');
+
+    const method =
+      $('intMethod').value;
+
+    const mode =
+      $('intAngle').value;
+
+
+    if(a === b){
+
+      setResult(
+        'intResult',
+        '0'
+      );
+
+      return;
+
+    }
+
+
+    if(
+      method === 'simpson' &&
+      n % 2
+    ){
+
+      n++;
+
+    }
+
+
+    const h =
+      (b-a)/n;
+
+
+    let sum = 0;
+
+
+    if(method === 'trap'){
+
+      sum =
+        .5 *
+        (
+          f1(expr,a,mode) +
+          f1(expr,b,mode)
+        );
+
+
+      for(
+        let i=1;
+        i<n;
+        i++
+      ){
+
+        sum +=
+          f1(
+            expr,
+            a+i*h,
+            mode
+          );
+
+      }
+
+
+      sum *= h;
+
+    }
+
+
+    else{
+
+      sum =
+        f1(expr,a,mode) +
+        f1(expr,b,mode);
+
+
+      for(
+        let i=1;
+        i<n;
+        i++
+      ){
+
+        sum +=
+          (
+            i % 2
+              ? 4
+              : 2
+          ) *
+          f1(
+            expr,
+            a+i*h,
+            mode
+          );
+
+      }
+
+
+      sum *=
+        h / 3;
+
+    }
+
+
+    setResult(
+      'intResult',
+
+      `
+        <div class="big-result">
+          ${fmt(sum,12)}
+        </div>
+
+        <div class="status">
+          ${
+            method === 'simpson'
+              ? 'Simpson 1/3'
+              : 'Composite Trapezoid'
+          }，
+          n = ${n}
+        </div>
+      `
+    );
+
+  }catch(e){
+
+    errorResult(
+      'intResult',
+      e
+    );
+
+  }
+
+}
+
+
+function runSeries(){
+
+  try{
+
+    const expr =
+      $('sumTerm').value;
+
+    const s =
+      safeInt('sumStart');
+
+    const e =
+      Math.floor(
+        num('sumEnd')
+      );
+
+    const mode =
+      $('sumMode').value;
+
+
+    if(e < s){
+
+      throw new Error(
+        '終點必須 ≥ 起點。'
+      );
+
+    }
+
+
+    if(
+      e-s > 2000000
+    ){
+
+      throw new Error(
+        '項數過大，請降低範圍。'
+      );
+
+    }
+
+
+    let acc =
+      mode === 'sum'
+        ? 0
+        : 1;
+
+
+    for(
+      let k=s;
+      k<=e;
+      k++
+    ){
+
+      const v =
+        evalExpr(
+          expr,
+          {k},
+          state.angle
+        );
+
+
+      if(mode === 'sum'){
+
+        acc =
+          math.add(
+            acc,
+            v
+          );
+
+      }
+
+      else{
+
+        acc =
+          math.multiply(
+            acc,
+            v
+          );
+
+      }
+
+    }
+
+
+    setResult(
+      'seriesResult',
+
+      `
+        <div class="big-result">
+          ${escapeHtml(
+            fmt(acc,14)
+          )}
+        </div>
+
+        <div class="status">
+          k = ${s} 到 ${e}
+        </div>
+      `
+    );
+
+  }catch(e){
+
+    errorResult(
+      'seriesResult',
+      e
+    );
+
+  }
+
+}
+
+
+// ================================================================
+// Statistics
+// ================================================================
+
+function parseData(){
+
+  return $('dataInput')
+    .value
+    .trim()
+    .split(/[,\\s;]+/)
+    .filter(Boolean)
+    .map(Number)
+    .filter(Number.isFinite);
+
+}
+
+
+function quantile(
+  sorted,
+  p
+){
+
+  const pos =
+    (sorted.length - 1) * p;
+
+
+  const lo =
+    Math.floor(pos);
+
+  const hi =
+    Math.ceil(pos);
+
+
+  return lo === hi
+
+    ? sorted[lo]
+
+    : sorted[lo] +
+      (
+        sorted[hi] -
+        sorted[lo]
+      ) *
+      (pos-lo);
+
+}
+
+
+function modes(a){
+
+  const m =
+    new Map();
+
+
+  a.forEach(
+    v =>
+      m.set(
+        v,
+        (m.get(v) || 0) + 1
+      )
+  );
+
+
+  const mx =
+    Math.max(
+      ...m.values()
+    );
+
+
+  return [
+    ...m.entries()
+  ]
+    .filter(
+      ([_,c]) =>
+        c === mx
+    )
+    .map(
+      ([v]) =>
+        v
+    );
+
+}
+
+
+function runStats(){
+
+  try{
+
+    const a =
+      parseData();
+
+
+    if(!a.length){
+
+      throw new Error(
+        '請輸入至少一個數字。'
+      );
+
+    }
+
+
+    const s =
+      [...a].sort(
+        (x,y) =>
+          x-y
+      );
+
+
+    const n =
+      a.length;
+
+
+    const mean =
+      a.reduce(
+        (x,y) =>
+          x+y,
+        0
+      ) / n;
+
+
+    const popVar =
+      a.reduce(
+        (z,x) =>
+          z +
+          (x-mean)**2,
+        0
+      ) / n;
+
+
+    const sampVar =
+      n > 1
+        ? a.reduce(
+            (z,x) =>
+              z +
+              (x-mean)**2,
+            0
+          ) /
+          (n-1)
+        : NaN;
+
+
+    const med =
+      quantile(
+        s,
+        .5
+      );
+
+
+    const q1 =
+      quantile(
+        s,
+        .25
+      );
+
+
+    const q3 =
+      quantile(
+        s,
+        .75
+      );
+
+
+    const md =
+      modes(a);
+
+
+    const min =
+      Math.min(...a);
+
+
+    const max =
+      Math.max(...a);
+
+
+    setResult(
+      'statsResult',
+
+      `
+        <div class="grid four">
+
+          <div class="kpi">
+            <div class="label">
+              樣本數 n
+            </div>
+            <div class="value">
+              ${n}
+            </div>
+          </div>
+
+
+          <div class="kpi">
+            <div class="label">
+              平均數
+            </div>
+            <div class="value">
+              ${fmt(mean,10)}
+            </div>
+          </div>
+
+
+          <div class="kpi">
+            <div class="label">
+              中位數
+            </div>
+            <div class="value">
+              ${fmt(med,10)}
+            </div>
+          </div>
+
+
+          <div class="kpi">
+            <div class="label">
+              眾數
+            </div>
+            <div class="value">
+              ${md
+                .map(
+                  v =>
+                    fmt(v,8)
+                )
+                .join(', ')}
+            </div>
+          </div>
+
+
+          <div class="kpi">
+            <div class="label">
+              母體變異數
+            </div>
+            <div class="value">
+              ${fmt(popVar,10)}
+            </div>
+          </div>
+
+
+          <div class="kpi">
+            <div class="label">
+              樣本變異數
+            </div>
+            <div class="value">
+              ${
+                Number.isFinite(sampVar)
+                  ? fmt(sampVar,10)
+                  : '—'
+              }
+            </div>
+          </div>
+
+
+          <div class="kpi">
+            <div class="label">
+              母體標準差
+            </div>
+            <div class="value">
+              ${fmt(
+                Math.sqrt(popVar),
+                10
+              )}
+            </div>
+          </div>
+
+
+          <div class="kpi">
+            <div class="label">
+              IQR
+            </div>
+            <div class="value">
+              ${fmt(
+                q3-q1,
+                10
+              )}
+            </div>
+          </div>
+
+        </div>
+
+
+        <div class="status">
+          最小值 ${fmt(min,8)}
+          · Q1 ${fmt(q1,8)}
+          · Q3 ${fmt(q3,8)}
+          · 最大值 ${fmt(max,8)}
+        </div>
+      `
+    );
+
+  }catch(e){
+
+    errorResult(
+      'statsResult',
+      e
+    );
+
+  }
+
+}
+
+
+function factorial(n){
+
+  if(
+    !Number.isInteger(n) ||
+    n < 0 ||
+    n > 170
+  ){
+
+    throw new Error(
+      'n 必須為 0～170 的整數（Number 精準範圍）。'
+    );
+
+  }
+
+
+  return math.factorial(n);
+
+}
+
+
+function runComb(){
+
+  try{
+
+    const n =
+      Math.floor(
+        num('combN')
+      );
+
+
+    const k =
+      Math.floor(
+        num('combK')
+      );
+
+
+    const op =
+      $('combOp').value;
+
+
+    if(
+      n < 0 ||
+      k < 0 ||
+      k > n
+    ){
+
+      throw new Error(
+        '需滿足 n ≥ k ≥ 0。'
+      );
+
+    }
+
+
+    let v;
+
+
+    if(op === 'F'){
+
+      v =
+        factorial(n);
+
+    }
+
+
+    else if(op === 'P'){
+
+      v =
+        factorial(n) /
+        factorial(n-k);
+
+    }
+
+
+    else{
+
+      v =
+        factorial(n) /
+        (
+          factorial(k) *
+          factorial(n-k)
+        );
+
+    }
+
+
+    setResult(
+      'combResult',
+
+      `
+        <div class="big-result">
+          ${fmt(v,14)}
+        </div>
+      `
+    );
+
+  }catch(e){
+
+    errorResult(
+      'combResult',
+      e
+    );
+
+  }
+
+}
+
+
+// ================================================================
+// Normal Distribution
+// ================================================================
+
+function normalPDF(
+  x,
+  mu,
+  sigma
+){
+
+  return Math.exp(
+    -0.5 *
+    (
+      (x-mu)/sigma
+    )**2
+  )
+  /
+  (
+    sigma *
+    Math.sqrt(
+      2*Math.PI
+    )
+  );
+
+}
+
+
+function normalCDF(
+  x,
+  mu,
+  sigma
+){
+
+  return 0.5 *
+    (
+      1 +
+      erf(
+        (x-mu) /
+        (
+          sigma *
+          Math.sqrt(2)
+        )
+      )
+    );
+
+}
+
+
+// Abramowitz-Stegun 7.1.26 誤差函數近似。
+function erf(x){
+
+  const sign =
+    x < 0
+      ? -1
+      : 1;
+
+
+  const a =
+    Math.abs(x);
+
+
+  const p =
+    .3275911;
+
+
+  const t =
+    1 / (
+      1+p*a
+    );
+
+
+  const y =
+    1 -
+    (
+      (
+        (
+          (
+            (
+              1.061405429*t -
+              1.453152027
+            ) * t +
+            1.421413741
+          ) * t -
+          0.284496736
+        ) * t +
+        0.254829592
+      ) * t
+    ) *
+    Math.exp(
+      -a*a
+    );
+
+
+  return sign*y;
+
+}
+
+
+function runNormal(){
+
+  try{
+
+    const mu =
+      num('normalMu');
+
+    const sigma =
+      num('normalSigma');
+
+    const x =
+      num('normalX');
+
+
+    if(!(sigma > 0)){
+
+      throw new Error(
+        'σ 必須 > 0。'
+      );
+
+    }
+
+
+    const v =
+      $('normalMode').value === 'pdf'
+        ? normalPDF(
+            x,
+            mu,
+            sigma
+          )
+        : normalCDF(
+            x,
+            mu,
+            sigma
+          );
+
+
+    setResult(
+      'normalResult',
+
+      `
+        <div class="big-result">
+          ${fmt(v,14)}
+        </div>
+
+        <div class="status">
+          ${$(
+            'normalMode'
+          ).value.toUpperCase()}
+          ：μ=${mu},
+          σ=${sigma},
+          x=${x}
+        </div>
+      `
+    );
+
+  }catch(e){
+
+    errorResult(
+      'normalResult',
+      e
+    );
+
+  }
+
+}
+
+
+// ================================================================
+// Root Finding
+// ================================================================
+
+function numericalDerivative(
+  expr,
+  x,
+  h,
+  mode
+){
+
+  return (
+    f1(
+      expr,
+      x+h,
+      mode
+    ) -
+    f1(
+      expr,
+      x-h,
+      mode
+    )
+  ) /
+  (2*h);
+
+}
+
+
+function runRoot(){
+
+  try{
+
+    const expr =
+      $('rootF').value;
+
+
+    const method =
+      $('rootMethod').value;
+
+
+    const maxIt =
+      safeInt('rootIter');
+
+
+    const tol =
+      Math.abs(
+        num('rootTol')
+      );
+
+
+    const mode =
+      $('rootAngle').value;
+
+
+    if(!(tol > 0)){
+
+      throw new Error(
+        '容許誤差必須 > 0。'
+      );
+
+    }
+
+
+    let root,
+        iter=0,
+        trace=[];
+
+
+    if(
+      method === 'bisection'
+    ){
+
+      let a =
+        num('rootA');
+
+      let b =
+        num('rootB');
+
+
+      let fa =
+        f1(
+          expr,
+          a,
+          mode
+        );
+
+
+      let fb =
+        f1(
+          expr,
+          b,
+          mode
+        );
+
+
+      if(fa === 0){
+
+        root = a;
+
+      }
+
+
+      else if(fb === 0){
+
+        root = b;
+
+      }
+
+
+      else if(
+        fa*fb > 0
+      ){
+
+        throw new Error(
+          '二分法要求 f(a) 與 f(b) 異號。'
+        );
+
+      }
+
+
+      if(root === undefined){
+
+        for(
+          ;
+          iter<maxIt;
+          iter++
+        ){
+
+          const c =
+            (a+b)/2;
+
+
+          const fc =
+            f1(
+              expr,
+              c,
+              mode
+            );
+
+
+          trace.push(
+            [
+              iter+1,
+              c,
+              fc
+            ]
+          );
+
+
+          if(
+            Math.abs(fc) < tol ||
+            (b-a)/2 < tol
+          ){
+
+            root = c;
+            break;
+
+          }
+
+
+          if(
+            fa*fc < 0
+          ){
+
+            b = c;
+            fb = fc;
+
+          }
+
+          else{
+
+            a = c;
+            fa = fc;
+
+          }
+
+        }
+
+      }
+
+    }
+
+
+    else{
+
+      let x =
+        num('rootA');
+
+
+      const derivH =
+        Math.max(
+          1e-6,
+          Math.abs(
+            num('rootB')
+          )
+        );
+
+
+      for(
+        ;
+        iter<maxIt;
+        iter++
+      ){
+
+        const fx =
+          f1(
+            expr,
+            x,
+            mode
+          );
+
+
+        trace.push(
+          [
+            iter+1,
+            x,
+            fx
+          ]
+        );
+
+
+        if(
+          Math.abs(fx) < tol
+        ){
+
+          root = x;
+          break;
+
+        }
+
+
+        const d =
+          numericalDerivative(
+            expr,
+            x,
+            derivH,
+            mode
+          );
+
+
+        if(
+          !Number.isFinite(d) ||
+          Math.abs(d) < 1e-14
+        ){
+
+          throw new Error(
+            'Newton 法導數太小或無法計算。'
+          );
+
+        }
+
+
+        const nx =
+          x -
+          fx/d;
+
+
+        if(
+          !Number.isFinite(nx)
+        ){
+
+          throw new Error(
+            '迭代發散。'
+          );
+
+        }
+
+
+        if(
+          Math.abs(nx-x) < tol
+        ){
+
+          root = nx;
+          iter++;
+          break;
+
+        }
+
+
+        x = nx;
+
+      }
+
+
+      if(
+        root === undefined
+      ){
+
+        root =
+          trace.at(-1)?.[1];
+
+      }
+
+    }
+
+
+    const last =
+      trace.at(-1);
+
+
+    setResult(
+
+      'rootResult',
+
+      `
+        <div class="big-result">
+          x ≈ ${fmt(root,14)}
+        </div>
+
+        <div class="status">
+          迭代次數：
+          ${iter}
+          · |f(x)| ≈
+          ${
+            last
+              ? fmt(
+                  Math.abs(
+                    last[2]
+                  ),
+                  8
+                )
+              : '—'
+          }
+          · 方法：
+          ${
+            method === 'bisection'
+              ? '二分法'
+              : 'Newton-Raphson'
+          }
+        </div>
+
+
+        <details>
+
+          <summary>
+            查看迭代過程
+          </summary>
+
+
+          <div class="matrix-output">
+            ${
+              trace
+                .map(
+                  r =>
+                    `${r[0]}\\tx=${fmt(
+                      r[1],
+                      10
+                    )}\\tf(x)=${fmt(
+                      r[2],
+                      10
+                    )}`
+                )
+                .join('\n')
+            }
+          </div>
+
+        </details>
+      `
+
+    );
+
+  }catch(e){
+
+    errorResult(
+      'rootResult',
+      e
+    );
+
+  }
+
+}
+
+
+// ================================================================
+// ODE
+// ================================================================
+
+function odeEval(
+  expr,
+  x,
+  y,
+  mode
+){
+
+  return Number(
+    evalExpr(
+      expr,
+      {x,y},
+      mode
+    )
+  );
+
+}
+
+
+function runODE(){
+
+  try{
+
+    const expr =
+      $('odeF').value;
+
+
+    const method =
+      $('odeMethod').value;
+
+
+    const x0 =
+      num('odeX0');
+
+
+    const y0 =
+      num('odeY0');
+
+
+    const xe =
+      num('odeEnd');
+
+
+    const h0 =
+      Math.abs(
+        num('odeH')
+      );
+
+
+    const mode =
+      $('odeAngle').value;
+
+
+    const maxPts =
+      safeInt('odeMax');
+
+
+    if(!(h0 > 0)){
+
+      throw new Error(
+        'h 必須 > 0。'
+      );
+
+    }
+
+
+    if(x0 === xe){
+
+      throw new Error(
+        'x₀ 與終點不可相同。'
+      );
+
+    }
+
+
+    const dir =
+      xe > x0
+        ? 1
+        : -1;
+
+
+    const h =
+      dir*h0;
+
+
+    let x = x0;
+    let y = y0;
+
+
+    const points = [
+      [x,y]
+    ];
+
+
+    let steps = 0;
+
+
+    while(
+
+      (
+        dir > 0
+          ? x < xe-1e-14
+          : x > xe+1e-14
+      )
+
+      &&
+
+      steps < maxPts
+
+    ){
+
+      const hh =
+        dir > 0
+          ? Math.min(
+              h,
+              xe-x
+            )
+          : Math.max(
+              h,
+              xe-x
+            );
+
+
+      if(
+        method === 'euler'
+      ){
+
+        y +=
+          hh *
+          odeEval(
+            expr,
+            x,
+            y,
+            mode
+          );
+
+      }
+
+
+      else{
+
+        const k1 =
+          odeEval(
+            expr,
+            x,
+            y,
+            mode
+          );
+
+
+        const k2 =
+          odeEval(
+            expr,
+            x+hh/2,
+            y+hh*k1/2,
+            mode
+          );
+
+
+        const k3 =
+          odeEval(
+            expr,
+            x+hh/2,
+            y+hh*k2/2,
+            mode
+          );
+
+
+        const k4 =
+          odeEval(
+            expr,
+            x+hh,
+            y+hh*k3,
+            mode
+          );
+
+
+        y +=
+          hh *
+          (
+            k1 +
+            2*k2 +
+            2*k3 +
+            k4
+          ) / 6;
+
+      }
+
+
+      x += hh;
+
+      steps++;
+
+
+      points.push([
+        x,
+        y
+      ]);
+
+    }
+
+
+    $('odeResult').className =
+      'result ok';
+
+
+    $('odeResult').innerHTML = `
+
+      <div class="grid two">
+
+        <div class="kpi">
+
+          <div class="label">
+            終點 x
+          </div>
+
+          <div class="value">
+            ${fmt(x,10)}
+          </div>
+
+        </div>
+
+
+        <div class="kpi">
+
+          <div class="label">
+            數值 y(x)
+          </div>
+
+          <div class="value">
+            ${fmt(y,10)}
+          </div>
+
+        </div>
+
+      </div>
+
+
+      <div class="status">
+        ${method.toUpperCase()}，
+        共 ${steps} steps
+      </div>
+
+    `;
+
+
+    Plotly.newPlot(
+
+      'odePlot',
+
+      [
+        {
+          x:
+            points.map(
+              p => p[0]
+            ),
+
+          y:
+            points.map(
+              p => p[1]
+            ),
+
+          mode:'lines',
+
+          name:'y(x)',
+
+          line:{
+            width:3
+          }
+        }
+      ],
+
+      plotLayout(
+        'ODE 數值解'
+      ),
+
+      {
+        responsive:true,
+        displaylogo:false
+      }
+
+    );
+
+  }catch(e){
+
+    errorResult(
+      'odeResult',
+      e
+    );
+
+  }
+
+}
+
+
+// ================================================================
+// Function Plotter
+// ================================================================
+
+function finiteNumber(v){
+
+  return typeof v === 'number' &&
+         Number.isFinite(v);
+
+}
+
+
+function getXY(
+  expr,
+  xmin,
+  xmax,
+  n,
+  mode
+){
+
+  const xs = [];
+  const ys = [];
+
+
+  const dx =
+    (xmax-xmin)/(n-1);
+
+
+  const f =
+    math.compile(expr);
+
+
+  for(
+    let i=0;
+    i<n;
+    i++
+  ){
+
+    const x =
+      xmin+i*dx;
+
+
+    let y;
+
+
+    try{
+
+      y =
+        f.evaluate(
+          {
+            ...scopeFor(mode),
+            x
+          }
+        );
+
+    }catch{
+
+      y = NaN;
+
+    }
+
+
+    xs.push(x);
+
+
+    if(
+      typeof y === 'number' &&
+      Number.isFinite(y)
+    ){
+
+      ys.push(y);
+
+    }
+
+    else{
+
+      ys.push(null);
+
+    }
+
+  }
+
+
+  return {
+    xs,
+    ys
+  };
+
+}
+
+
+function plotLayout(
+  title='函數圖形'
+){
+
+  return {
+
+    title:{
+      text:title,
+      font:{
+        size:16
+      }
+    },
+
+
+    margin:{
+      l:55,
+      r:18,
+      t:45,
+      b:48
+    },
+
+
+    paper_bgcolor:'#ffffff',
+
+    plot_bgcolor:'#ffffff',
+
+
+    xaxis:{
+      title:'x',
+      zeroline:true,
+      gridcolor:'#e5e7eb'
+    },
+
+
+    yaxis:{
+      title:'y',
+      zeroline:true,
+      gridcolor:'#e5e7eb'
+    },
+
+
+    hovermode:'x unified'
+
+  };
+
+}
+
+
+function runPlot(){
+
+  try{
+
+    const expr =
+      $('plotF').value;
+
+
+    const xmin =
+      num('plotMin');
+
+
+    const xmax =
+      num('plotMax');
+
+
+    const n =
+      Math.min(
+        10000,
+        Math.max(
+          50,
+          safeInt('plotN')
+        )
+      );
+
+
+    const mode =
+      $('plotAngle').value;
+
+
+    if(!(xmax > xmin)){
+
+      throw new Error(
+        'x 最大值必須大於最小值。'
+      );
+
+    }
+
+
+    const {
+      xs,
+      ys
+    } =
+      getXY(
+        expr,
+        xmin,
+        xmax,
+        n,
+        mode
+      );
+
+
+    Plotly.newPlot(
+
+      'mainPlot',
+
+      [
+        {
+          x:xs,
+          y:ys,
+          type:'scatter',
+          mode:'lines',
+          name:'f(x)',
+          line:{
+            width:3
+          }
+        }
+      ],
+
+      plotLayout(
+        `y = ${expr}`
+      ),
+
+      {
+        responsive:true,
+        displaylogo:false,
+        scrollZoom:true
+      }
+
+    );
+
+
+    $('plotResult').textContent =
+      `完成：${n} 個取樣點。可直接使用滑鼠滾輪縮放、拖曳平移。`;
+
+
+    refreshMathJax();
+
+  }catch(e){
+
+    $('plotResult').textContent =
+      '繪圖錯誤：' +
+      e.message;
+
+  }
+
+}
+
+
+function plotDerivative(){
+
+  try{
+
+    const expr =
+      $('plotF').value;
+
+
+    const xmin =
+      num('plotMin');
+
+
+    const xmax =
+      num('plotMax');
+
+
+    const n =
+      Math.min(
+        10000,
+        Math.max(
+          50,
+          safeInt('plotN')
+        )
+      );
+
+
+    const mode =
+      $('plotAngle').value;
+
+
+    const {
+      xs,
+      ys
+    } =
+      getXY(
+        expr,
+        xmin,
+        xmax,
+        n,
+        mode
+      );
+
+
+    const dx =
+      (xmax-xmin)/(n-1);
+
+
+    const ds =
+      ys.map(
+        (_,i) => {
+
+          if(
+            i === 0 ||
+            i === n-1
+          ){
+
+            return null;
+
+          }
+
+
+          if(
+            ys[i+1] === null ||
+            ys[i-1] === null
+          ){
+
+            return null;
+
+          }
+
+
+          return (
+            ys[i+1] -
+            ys[i-1]
+          ) /
+          (2*dx);
+
+        }
+      );
+
+
+    Plotly.newPlot(
+
+      'mainPlot',
+
+      [
+
+        {
+          x:xs,
+          y:ys,
+          type:'scatter',
+          mode:'lines',
+          name:'f(x)',
+          line:{
+            width:2
+          }
+        },
+
+        {
+          x:xs,
+          y:ds,
+          type:'scatter',
+          mode:'lines',
+          name:"f'(x)",
+          line:{
+            width:2,
+            dash:'dash'
+          }
+        }
+
+      ],
+
+      plotLayout(
+        '函數與數值導數'
+      ),
+
+      {
+        responsive:true,
+        displaylogo:false,
+        scrollZoom:true
+      }
+
+    );
+
+
+    $('plotResult').textContent =
+      '已繪製函數與中心差分數值導數。';
+
+  }catch(e){
+
+    $('plotResult').textContent =
+      '繪圖錯誤：' +
+      e.message;
+
+  }
+
+}
+
+
+// ================================================================
+// 初始化
+// ================================================================
+
+renderHistory();
+
+
+if(
+  window.MathJax &&
+  MathJax.startup
+){
+
+  MathJax.startup.promise
+    .then(
+      refreshMathJax
+    )
+    .catch(
+      ()=>{}
+    );
+
+}
+
+</script>
+
+</body>
+</html>
